@@ -114,7 +114,13 @@ func convert(path string) error {
 
 func scan(path string) error {
 	path = common.CleanPath(path)
-	if common.IsFile(path) {
+	
+	b,err := common.IsFile(path)
+	if err != nil {
+		return err
+	} 
+	
+	if b {
 		return convert(path)
 	}
 
@@ -127,7 +133,12 @@ func scan(path string) error {
 		if !strings.HasPrefix(fi.Name(), ".") {
 			fn := filepath.Join(path, fi.Name())
 
-			if common.IsFile(fn) {
+			b,err := common.IsFile(fn) 
+			if err != nil {
+				return err
+			}
+
+			if b {
 				ext := filepath.Ext(fn)
 				if ext == ".java" || ext == ".xml" {
 					err := convert(fn)
