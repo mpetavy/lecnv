@@ -5,24 +5,23 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/mpetavy/common"
 )
 
 var (
-	path      *string
+	filemask  *string
 	recursive *bool
 	dos       *bool
-	le        string
+
+	le string
 )
 
 func init() {
-	path = flag.String("p", "", "path to directory")
-	recursive = flag.Bool("r", false, "recursive directory walk")
+	filemask = flag.String("f", "", "input file or STDIN")
+	recursive = flag.Bool("r", false, "recursive directory search")
 	dos = flag.Bool("dos", common.IsWindowsOS(), "DOS line ending CRLF")
 }
 
@@ -112,54 +111,6 @@ func convert(path string) error {
 	return nil
 }
 
-func scan(path string) error {
-	path = common.CleanPath(path)
-	
-	b,err := common.IsFile(path)
-	if err != nil {
-		return err
-	} 
-	
-	if b {
-		return convert(path)
-	}
-
-	fis, err := ioutil.ReadDir(path)
-	if err != nil {
-		return err
-	}
-
-	for _, fi := range fis {
-		if !strings.HasPrefix(fi.Name(), ".") {
-			fn := filepath.Join(path, fi.Name())
-
-			b,err := common.IsFile(fn) 
-			if err != nil {
-				return err
-			}
-
-			if b {
-				ext := filepath.Ext(fn)
-				if ext == ".java" || ext == ".xml" {
-					err := convert(fn)
-					if err != nil {
-						return err
-					}
-				}
-			} else {
-				if *recursive {
-					err := scan(fn)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
 func run() error {
 	if *dos {
 		le = fmt.Sprint("\r\n")
@@ -167,24 +118,12 @@ func run() error {
 		le = fmt.Sprintf("\n")
 	}
 
-	b, err := common.FileExists(*path)
-
-	if err != nil {
-		return err
-	}
-
-	if !b {
-		return fmt.Errorf("unknown file or directory: %s", *path)
-	}
-
-	err = scan(*path)
-
-	return err
+	return common.WalkFilepath(*filemask, *recursive, convert)
 }
 
 func main() {
 	defer common.Cleanup()
 
-	common.New(&common.App{"lecnv", "1.0.0", "2019", "Line ending converter", "mpetavy", common.APACHE, "https://github.com/mpetavy/lecnv", false, nil,nil, nil, run, 0}, []string{"p"})
+	common.New(&common.App{"lecnv", "1.0.0", "2019", "Line ending converter", "mpetavy", common.APACHE, "https://github.com/mpetavy/lecnv", false, nil, nil, nil, run, 0}, []string{"f"})
 	common.Run()
 }
