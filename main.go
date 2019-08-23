@@ -20,6 +20,8 @@ var (
 )
 
 func init() {
+	common.Init("lecnv", "1.0.0", "2019", "Line ending converter", "mpetavy", common.APACHE, "https://github.com/mpetavy/lecnv", false, nil, nil, run, 0)
+
 	filemask = flag.String("f", "", "input file or STDIN")
 	recursive = flag.Bool("r", false, "recursive directory search")
 	dos = flag.Bool("dos", common.IsWindowsOS(), "DOS line ending CRLF")
@@ -124,6 +126,5 @@ func run() error {
 func main() {
 	defer common.Cleanup()
 
-	common.New(&common.App{"lecnv", "1.0.0", "2019", "Line ending converter", "mpetavy", common.APACHE, "https://github.com/mpetavy/lecnv", false, nil, nil, run, 0}, []string{"f"})
-	common.Run()
+	common.Run([]string{"f"})
 }
