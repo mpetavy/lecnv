@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	common.Init("1.0.0", "2019", "Line ending converter", "mpetavy", common.APACHE, false, nil, nil, run, 0)
+	common.Init("1.0.0", "2019", "Line ending converter", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, false, nil, nil, run, 0)
 
 	filemask = flag.String("f", "", "input file or STDIN")
 	recursive = flag.Bool("r", false, "recursive directory search")
