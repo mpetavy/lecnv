@@ -15,6 +15,7 @@ var (
 	filemask  *string
 	recursive *bool
 	dos       *bool
+	dry       *bool
 
 	le string
 )
@@ -24,7 +25,8 @@ func init() {
 
 	filemask = flag.String("f", "", "input file or STDIN")
 	recursive = flag.Bool("r", false, "recursive directory search")
-	dos = flag.Bool("dos", common.IsWindowsOS(), "DOS line ending CRLF")
+	dos = flag.Bool("dos", false, "DOS line ending CRLF")
+	dry = flag.Bool("n", false, "Dry run")
 }
 
 func convert(path string) error {
@@ -92,16 +94,20 @@ func convert(path string) error {
 	}
 
 	if fiinfo.Size() != foinfo.Size() {
-		fmt.Printf("%s\n", path)
+		if *dry {
+			fmt.Printf("Would %s\n",path)
+		} else {
+			fmt.Printf("%s\n", path)
 
-		err := os.Remove(path)
-		if err != nil {
-			return err
-		}
+			err := os.Remove(path)
+			if err != nil {
+				return err
+			}
 
-		err = os.Rename(newpath, path)
-		if err != nil {
-			return err
+			err = os.Rename(newpath, path)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		err := os.Remove(newpath)
