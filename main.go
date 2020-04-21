@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	common.Init("1.0.0", "2019", "Line ending converter", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, false, nil, nil, run, 0)
+	common.Init("1.0.0", "2019", "Line ending converter", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, run, 0)
 
 	filemask = flag.String("f", "", "input file or STDIN")
 	recursive = flag.Bool("r", false, "recursive directory search")
@@ -95,7 +95,7 @@ func convert(path string) error {
 
 	if fiinfo.Size() != foinfo.Size() {
 		if *dry {
-			fmt.Printf("Would %s\n",path)
+			fmt.Printf("Would %s\n", path)
 		} else {
 			fmt.Printf("%s\n", path)
 
