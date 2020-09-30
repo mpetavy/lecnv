@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	common.Init(false, "1.0.0", "2019", "Line ending converter", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, run, 0)
+	common.Init(false, "1.0.0", "", "2019", "Line ending converter", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, run, 0)
 
 	filemask = flag.String("f", "", "input file or STDIN")
 	recursive = flag.Bool("r", false, "recursive directory search")
@@ -36,13 +36,17 @@ func convert(path string) error {
 	if err != nil {
 		return err
 	}
-	defer fi.Close()
+	defer func() {
+		common.DebugError(fi.Close())
+	}()
 
 	fo, err := os.Create(newpath)
 	if err != nil {
 		return err
 	}
-	defer fo.Close()
+	defer func() {
+		common.DebugError(fo.Close())
+	}()
 
 	r := bufio.NewReader(fi)
 
