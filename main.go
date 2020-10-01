@@ -113,12 +113,9 @@ func convert(path string) error {
 				return err
 			}
 		}
-	} else {
-		err := os.Remove(newpath)
-		if err != nil {
-			return err
-		}
 	}
+
+	common.DebugError(common.FileDelete(newpath))
 
 	return nil
 }
