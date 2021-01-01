@@ -127,7 +127,7 @@ func run() error {
 		le = fmt.Sprintf("\n")
 	}
 
-	return common.WalkFilepath(*filemask, *recursive, convert)
+	return common.WalkFilepath(*filemask, *recursive, false, convert)
 }
 
 func main() {
