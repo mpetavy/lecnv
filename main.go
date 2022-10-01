@@ -29,7 +29,11 @@ func init() {
 	dry = flag.Bool("n", false, "Dry run")
 }
 
-func convert(path string) error {
+func convert(path string, f os.FileInfo) error {
+	if f.IsDir() {
+		return nil
+	}
+
 	newpath := path + ".new"
 
 	fi, err := os.Open(path)
