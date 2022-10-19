@@ -131,9 +131,17 @@ func run() error {
 		le = fmt.Sprintf("\n")
 	}
 
-	fw := common.NewFilewalker(*filemask, *recursive, false, convert)
+	fw, err := common.NewFilewalker(*filemask, *recursive, false, convert)
+	if err != nil {
+		return err
+	}
 
-	return fw.Run()
+	err = fw.Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func main() {
