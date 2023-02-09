@@ -2,142 +2,133 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
-	"io"
-	"os"
-	"strings"
-
 	"github.com/mpetavy/common"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 var (
-	filemask  *string
-	recursive *bool
-	dos       *bool
-	dry       *bool
-
-	le string
+	filemask  = flag.String("f", "", "input file or STDIN")
+	recursive = flag.Bool("r", false, "recursive directory search")
+	lf        = flag.Bool("lf", false, "set file ending to LF (*nix)")
+	crlf      = flag.Bool("crlf", false, "set file ending to CRLF (Windows)")
 )
 
 func init() {
 	common.Init("1.0.0", "", "", "2019", "Line ending converter", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, nil, run, 0)
-
-	filemask = flag.String("f", "", "input file or STDIN")
-	recursive = flag.Bool("r", false, "recursive directory search")
-	dos = flag.Bool("dos", false, "DOS line ending CRLF")
-	dry = flag.Bool("n", false, "Dry run")
 }
 
-func convert(path string, f os.FileInfo) error {
-	if f.IsDir() {
-		return nil
+var (
+	exts = []string{
+		"*.go",
+		"go.mod",
+		"go.sum",
+		"*.md",
+		"*.i18n",
+		".xml",
+		".sh",
+		".js",
+		".yml",
+		"*.txt",
+		".dockerignore",
+		".gitignore",
+		"LICENSE",
+	}
+)
+
+func needsProcess(path string) bool {
+	if common.ContainsWildcard(*filemask) {
+		return true
 	}
 
-	newpath := path + ".new"
+	for _, ext := range exts {
+		b, err := common.EqualWildcards(filepath.Base(path), ext)
+		common.Panic(err)
 
-	fi, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		common.DebugError(fi.Close())
-	}()
-
-	fo, err := os.Create(newpath)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		common.DebugError(fo.Close())
-	}()
-
-	r := bufio.NewReader(fi)
-
-	for {
-		line, err := r.ReadString('\n')
-		oldlen := len(line)
-
-		if len(line) > 0 {
-			line = strings.TrimSuffix(line, "\n")
-			line = strings.TrimSuffix(line, "\r")
-
-			newlen := len(line)
-
-			if oldlen != newlen {
-				line = line + le
-			}
-
-			line = strings.Replace(line, "%", "%%", -1)
-
-			_, err = fmt.Fprintf(fo, line)
-			if err != nil {
-				return err
-			}
-		}
-
-		if err == io.EOF {
-			break
-		}
-
-	}
-
-	err = fi.Close()
-	if err != nil {
-		return err
-	}
-	err = fo.Close()
-	if err != nil {
-		return err
-	}
-
-	fiinfo, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-
-	foinfo, err := os.Stat(newpath)
-	if err != nil {
-		return err
-	}
-
-	if fiinfo.Size() != foinfo.Size() {
-		if *dry {
-			fmt.Printf("Would %s\n", path)
-		} else {
-			fmt.Printf("%s\n", path)
-
-			err := os.Remove(path)
-			if err != nil {
-				return err
-			}
-
-			err = os.Rename(newpath, path)
-			if err != nil {
-				return err
-			}
+		if b {
+			return true
 		}
 	}
 
-	common.DebugError(common.FileDelete(newpath))
-
-	return nil
+	return false
 }
 
 func run() error {
-	if *dos {
-		le = fmt.Sprint("\r\n")
-	} else {
-		le = fmt.Sprintf("\n")
-	}
+	fw, err := common.NewFilewalker(*filemask, *recursive, true, func(path string, fi os.FileInfo) error {
+		if fi.IsDir() {
+			if strings.HasPrefix(fi.Name(), ".") {
+				return fs.SkipDir
+			} else {
+				return nil
+			}
+		}
 
-	fw, err := common.NewFilewalker(*filemask, *recursive, false, convert)
-	if err != nil {
+		if !needsProcess(path) {
+			return nil
+		}
+
+		return processFile(path)
+	})
+	if common.Error(err) {
 		return err
 	}
 
 	err = fw.Run()
-	if err != nil {
+	if common.Error(err) {
+		return err
+	}
+
+	return nil
+}
+
+func processFile(path string) error {
+	ba, err := os.ReadFile(path)
+	if common.Error(err) {
+		return err
+	}
+
+	if bytes.Index(ba, []byte{0x0d, 0x0a}) != -1 {
+		common.Info("CRLF %s", path)
+	} else {
+		common.Info("LF %s", path)
+	}
+
+	var le []byte
+
+	switch {
+	case *lf:
+		le = []byte{0x0a}
+	case *crlf:
+		le = []byte{0x0d, 0x0a}
+	default:
+		return nil
+	}
+
+	var lines []string
+	scanner := bufio.NewScanner(bytes.NewReader(ba))
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	err = common.FileBackup(path)
+	if common.Error(err) {
+		return err
+	}
+
+	sb := bytes.Buffer{}
+
+	for _, line := range lines {
+		sb.WriteString(line)
+		sb.Write(le)
+	}
+
+	err = os.WriteFile(path, sb.Bytes(), common.DefaultFileMode)
+	if common.Error(err) {
 		return err
 	}
 
@@ -147,5 +138,5 @@ func run() error {
 func main() {
 	defer common.Done()
 
-	common.Run([]string{"f"})
+	common.Run(nil)
 }
