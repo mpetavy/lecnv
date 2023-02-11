@@ -136,7 +136,5 @@ func processFile(path string) error {
 }
 
 func main() {
-	defer common.Done()
-
 	common.Run(nil)
 }
