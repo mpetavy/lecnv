@@ -59,7 +59,7 @@ func needsProcess(path string) bool {
 }
 
 func run() error {
-	fw, err := common.NewFilewalker(*filemask, *recursive, true, func(path string, fi os.FileInfo) error {
+	err := common.WalkFiles(*filemask, *recursive, true, func(path string, fi os.FileInfo) error {
 		if fi.IsDir() {
 			if strings.HasPrefix(fi.Name(), ".") {
 				return fs.SkipDir
@@ -74,11 +74,6 @@ func run() error {
 
 		return processFile(path)
 	})
-	if common.Error(err) {
-		return err
-	}
-
-	err = fw.Run()
 	if common.Error(err) {
 		return err
 	}
