@@ -8,7 +8,6 @@ import (
 	"github.com/mpetavy/common"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -23,41 +22,6 @@ func init() {
 	common.Init("lecnv", "1.0.0", "", "", "2019", "Line ending converter", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, nil, run, 0)
 }
 
-var (
-	exts = []string{
-		"*.go",
-		"go.mod",
-		"go.sum",
-		"*.md",
-		"*.i18n",
-		".xml",
-		".sh",
-		".js",
-		".yml",
-		"*.txt",
-		".dockerignore",
-		".gitignore",
-		"LICENSE",
-	}
-)
-
-func needsProcess(path string) bool {
-	if common.ContainsWildcard(*filemask) {
-		return true
-	}
-
-	for _, ext := range exts {
-		b, err := common.EqualWildcards(filepath.Base(path), ext)
-		common.Panic(err)
-
-		if b {
-			return true
-		}
-	}
-
-	return false
-}
-
 func run() error {
 	err := common.WalkFiles(*filemask, *recursive, true, func(path string, fi os.FileInfo) error {
 		if fi.IsDir() {
@@ -66,10 +30,6 @@ func run() error {
 			} else {
 				return nil
 			}
-		}
-
-		if !needsProcess(path) {
-			return nil
 		}
 
 		return processFile(path)
@@ -82,15 +42,35 @@ func run() error {
 }
 
 func processFile(path string) error {
-	ba, err := os.ReadFile(path)
+	len, err := common.FileSize(path)
 	if common.Error(err) {
 		return err
 	}
 
+	len = common.Min(int64(4096), len)
+
+	ba := make([]byte, int(len))
+
+	f, err := os.Open(path)
+	if common.Error(err) {
+		return err
+	}
+
+	defer func() {
+		common.Error(f.Close())
+	}()
+
+	n, err := f.Read(ba)
+	if common.Error(err) {
+		return err
+	}
+
+	ba = ba[:n]
+
 	if bytes.Index(ba, []byte{0x0d, 0x0a}) != -1 {
 		common.Info("CRLF %s", path)
 	} else {
-		common.Info("LF %s", path)
+		common.Info("LF   %s", path)
 	}
 
 	var le []byte
