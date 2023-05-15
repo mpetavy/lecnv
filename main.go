@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	common.Init("lecnv", "1.0.0", "", "", "2019", "Line ending converter", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, nil, run, 0)
+	common.Init("lecnv", "", "", "", "2019", "Line ending converter", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, nil, run, 0)
 }
 
 func run() error {
@@ -42,14 +42,14 @@ func run() error {
 }
 
 func processFile(path string) error {
-	len, err := common.FileSize(path)
+	l, err := common.FileSize(path)
 	if common.Error(err) {
 		return err
 	}
 
-	len = common.Min(int64(4096), len)
+	l = common.Min(int64(4096), l)
 
-	ba := make([]byte, int(len))
+	ba := make([]byte, int(l))
 
 	f, err := os.Open(path)
 	if common.Error(err) {
