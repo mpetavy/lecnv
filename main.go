@@ -47,7 +47,7 @@ func processFile(path string) error {
 		return err
 	}
 
-	l = common.Min(int64(4096), l)
+	l = min(int64(4096), l)
 
 	ba := make([]byte, int(l))
 
