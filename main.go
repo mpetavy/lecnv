@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"embed"
 	"flag"
-	"fmt"
 	"github.com/mpetavy/common"
 	"io/fs"
 	"os"
@@ -18,8 +18,11 @@ var (
 	crlf      = flag.Bool("crlf", false, "set file ending to CRLF (Windows)")
 )
 
+//go:embed go.mod
+var resources embed.FS
+
 func init() {
-	common.Init("lecnv", "", "", "", "2019", "Line ending converter", "mpetavy", fmt.Sprintf("https://github.com/mpetavy/%s", common.Title()), common.APACHE, nil, nil, nil, run, 0)
+	common.Init("", "", "", "", "Line ending converter", "", "", "", &resources, nil, nil, run, 0)
 }
 
 func run() error {
