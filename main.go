@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"embed"
 	"flag"
+	"fmt"
 	"github.com/mpetavy/common"
 	"io/fs"
 	"os"
@@ -50,6 +51,10 @@ func processFile(path string) error {
 		return err
 	}
 
+	if *lf && *crlf {
+		return fmt.Errorf("either -lf or -crlf, but not both")
+	}
+
 	l = min(int64(4096), l)
 
 	ba := make([]byte, int(l))
@@ -70,20 +75,45 @@ func processFile(path string) error {
 
 	ba = ba[:n]
 
-	if bytes.Index(ba, []byte{0x0d, 0x0a}) != -1 {
-		common.Info("CRLF %s", path)
-	} else {
-		common.Info("LF   %s", path)
-	}
-
 	var le []byte
+
+	isOnlyList := !*lf && !*crlf
+	isCrlf := bytes.Index(ba, []byte{0x0d, 0x0a}) != -1
 
 	switch {
 	case *lf:
-		le = []byte{0x0a}
+		if isCrlf {
+			isCrlf = false
+			le = []byte{0x0a}
+		}
 	case *crlf:
-		le = []byte{0x0d, 0x0a}
-	default:
+		if !isCrlf {
+			isCrlf = true
+			le = []byte{0x0d, 0x0a}
+		}
+	}
+
+	var info string
+
+	if isCrlf {
+		info = "CRLF"
+	} else {
+		info = "LF"
+	}
+
+	if len(le) > 0 {
+		info += "*"
+	}
+
+	if isOnlyList {
+		info = fmt.Sprintf("%-4s", info)
+	} else {
+		info = fmt.Sprintf("%-5s", info)
+	}
+
+	common.Info("%s %s", info, path)
+
+	if isOnlyList || len(le) == 0 {
 		return nil
 	}
 
